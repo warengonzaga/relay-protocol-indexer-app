@@ -2,6 +2,8 @@
 
 A React-based application for indexing and monitoring relay protocol transactions, created with GitHub Spark.
 
+![demo](.github/assets/demo.gif)
+
 ## 🌐 Live Demo
 
 🚀 **[View Live Application](https://warengonzaga.github.io/relay-protocol-indexer-app/)**
