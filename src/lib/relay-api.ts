@@ -70,7 +70,8 @@ class RelayApiService {
   }
 
   async getChains(): Promise<Chain[]> {
-    return this.makeRequest<Chain[]>('/chains');
+    const response = await this.makeRequest<{ chains: Chain[] }>('/chains');
+    return response.chains;
   }
 
   async indexTransaction(request: IndexTransactionRequest): Promise<{ success: boolean }> {
@@ -161,6 +162,9 @@ class RelayApiService {
       // BSC
       /bscscan\.com\/tx\/(0x[a-fA-F0-9]{64})/,
       /testnet\.bscscan\.com\/tx\/(0x[a-fA-F0-9]{64})/,
+      
+      // HyperEVM
+      /hyperevmscan\.io\/tx\/(0x[a-fA-F0-9]{64})/,
     ];
 
     for (const pattern of patterns) {
@@ -173,144 +177,89 @@ class RelayApiService {
     return null;
   }
 
+  async getSupportedChainNames(): Promise<string[]> {
+    try {
+      const chains = await this.getChains();
+      const chainNames = chains
+        .filter(chain => !chain.disabled && chain.depositEnabled)
+        .map(chain => chain.displayName || chain.name)
+        .sort();
+      
+      console.log('Supported chain names:', chainNames);
+      return chainNames;
+    } catch (error) {
+      console.error('Error fetching supported chains:', error);
+      // Fallback to static list
+      return ['Ethereum', 'Polygon', 'Arbitrum', 'Base', 'BSC', 'Optimism'];
+    }
+  }
+
   async getChainIdFromUrl(url: string): Promise<number | null> {
     console.log('Getting chain ID for URL:', url);
     
-    // First try static mappings for common explorers
-    const staticMappings: Record<string, number> = {
-      'etherscan.io': 1, // Ethereum mainnet
-      'sepolia.etherscan.io': 11155111, // Sepolia
-      'goerli.etherscan.io': 5, // Goerli (deprecated but still in use)
-      'polygonscan.com': 137, // Polygon
-      'mumbai.polygonscan.com': 80001, // Polygon Mumbai testnet
-      'arbiscan.io': 42161, // Arbitrum One
-      'nova.arbiscan.io': 42170, // Arbitrum Nova
-      'testnet.arbiscan.io': 421613, // Arbitrum Goerli
-      'optimistic.etherscan.io': 10, // Optimism
-      'goerli-optimism.etherscan.io': 420, // Optimism Goerli
-      'basescan.org': 8453, // Base
-      'goerli.basescan.org': 84531, // Base Goerli
-      'bscscan.com': 56, // BSC
-      'testnet.bscscan.com': 97, // BSC testnet
-    };
-
-    // Check static mappings first
-    for (const [domain, chainId] of Object.entries(staticMappings)) {
-      if (url.includes(domain)) {
-        console.log(`Found static mapping: ${domain} -> ${chainId}`);
-        return chainId;
-      }
-    }
-
-    // Try to extract from path patterns like /chain/1/tx/
-    const chainPathMatch = url.match(/\/chain\/(\d+)\//);
-    if (chainPathMatch) {
-      const chainId = parseInt(chainPathMatch[1]);
-      console.log(`Found chain ID in URL path: ${chainId}`);
-      return chainId;
-    }
-
-    // If no static mapping found, try to get from API and match by explorer domains
     try {
-      console.log('Fetching chains from API to resolve chain ID...');
+      // Get all chains from the API first
+      console.log('Fetching chains from API...');
       const chains = await this.getChains();
-      console.log('Available chains:', chains.map(c => ({ id: c.id, name: c.name })));
+      console.log('Available chains:', chains.map(c => ({ id: c.id, name: c.name, explorer: c.explorerUrl })));
       
-      // Try to match based on explorer domain patterns
-      if (url.includes('arbiscan.io') && !url.includes('nova') && !url.includes('testnet')) {
-        const arbitrumChain = chains.find(chain => 
-          chain.id === '42161' || // Direct match for Arbitrum One
-          (chain.name.toLowerCase().includes('arbitrum') && 
-           (chain.name.toLowerCase().includes('one') || chain.name.toLowerCase() === 'arbitrum'))
-        );
-        if (arbitrumChain) {
-          console.log(`Found Arbitrum chain: ${arbitrumChain.name} (${arbitrumChain.id})`);
-          return parseInt(arbitrumChain.id);
+      // First, try to match by explorer URL from API
+      for (const chain of chains) {
+        if (chain.explorerUrl && url.includes(new URL(chain.explorerUrl).hostname)) {
+          console.log(`Found chain by explorer URL: ${chain.name} (${chain.id}) - ${chain.explorerUrl}`);
+          return chain.id;
         }
       }
       
-      if (url.includes('nova.arbiscan.io')) {
-        const arbitrumNovaChain = chains.find(chain => 
-          chain.id === '42170' || 
-          chain.name.toLowerCase().includes('nova')
-        );
-        if (arbitrumNovaChain) {
-          console.log(`Found Arbitrum Nova chain: ${arbitrumNovaChain.name} (${arbitrumNovaChain.id})`);
-          return parseInt(arbitrumNovaChain.id);
-        }
-      }
-      
-      if (url.includes('polygonscan.com') && !url.includes('mumbai')) {
-        const polygonChain = chains.find(chain => 
-          chain.id === '137' ||
-          (chain.name.toLowerCase().includes('polygon') && 
-           !chain.name.toLowerCase().includes('mumbai') &&
-           !chain.name.toLowerCase().includes('test'))
-        );
-        if (polygonChain) {
-          console.log(`Found Polygon chain: ${polygonChain.name} (${polygonChain.id})`);
-          return parseInt(polygonChain.id);
-        }
-      }
-      
-      if (url.includes('bscscan.com') && !url.includes('testnet')) {
-        const bscChain = chains.find(chain => 
-          chain.id === '56' ||
-          chain.name.toLowerCase().includes('bsc') || 
-          chain.name.toLowerCase().includes('binance')
-        );
-        if (bscChain) {
-          console.log(`Found BSC chain: ${bscChain.name} (${bscChain.id})`);
-          return parseInt(bscChain.id);
-        }
-      }
-      
-      if (url.includes('basescan.org') && !url.includes('goerli')) {
-        const baseChain = chains.find(chain => 
-          chain.id === '8453' ||
-          (chain.name.toLowerCase().includes('base') && 
-           !chain.name.toLowerCase().includes('goerli') &&
-           !chain.name.toLowerCase().includes('test'))
-        );
-        if (baseChain) {
-          console.log(`Found Base chain: ${baseChain.name} (${baseChain.id})`);
-          return parseInt(baseChain.id);
-        }
-      }
-      
-      if (url.includes('optimistic.etherscan.io') && !url.includes('goerli')) {
-        const optimismChain = chains.find(chain => 
-          chain.id === '10' ||
-          (chain.name.toLowerCase().includes('optimism') && 
-           !chain.name.toLowerCase().includes('goerli') &&
-           !chain.name.toLowerCase().includes('test'))
-        );
-        if (optimismChain) {
-          console.log(`Found Optimism chain: ${optimismChain.name} (${optimismChain.id})`);
-          return parseInt(optimismChain.id);
-        }
-      }
-      
-      if (url.includes('etherscan.io') && !url.includes('sepolia') && !url.includes('goerli')) {
-        const ethereumChain = chains.find(chain => 
-          chain.id === '1' ||
-          chain.name.toLowerCase() === 'ethereum' ||
-          chain.name.toLowerCase() === 'mainnet'
-        );
-        if (ethereumChain) {
-          console.log(`Found Ethereum chain: ${ethereumChain.name} (${ethereumChain.id})`);
-          return parseInt(ethereumChain.id);
-        }
-      }
-      
-      console.warn('No matching chain found in API response');
-    } catch (error) {
-      console.warn('Failed to fetch chains from API:', error);
-    }
+      // Fallback to static mappings for common patterns
+      const staticMappings: Record<string, number> = {
+        'etherscan.io': 1,
+        'sepolia.etherscan.io': 11155111,
+        'goerli.etherscan.io': 5,
+        'polygonscan.com': 137,
+        'mumbai.polygonscan.com': 80001,
+        'arbiscan.io': 42161,
+        'nova.arbiscan.io': 42170,
+        'testnet.arbiscan.io': 421613,
+        'optimistic.etherscan.io': 10,
+        'goerli-optimism.etherscan.io': 420,
+        'basescan.org': 8453,
+        'goerli.basescan.org': 84531,
+        'bscscan.com': 56,
+        'testnet.bscscan.com': 97,
+        'hyperevmscan.io': 999, // HyperEVM
+      };
 
-    // Return null instead of defaulting to 1, so we can show a proper error
-    console.warn('Could not determine chain ID from URL');
-    return null;
+      // Check static mappings and verify chain is supported
+      for (const [domain, chainId] of Object.entries(staticMappings)) {
+        if (url.includes(domain)) {
+          const chainExists = chains.find(c => c.id === chainId);
+          if (chainExists) {
+            console.log(`Found supported chain: ${chainExists.name} (${chainId})`);
+            return chainId;
+          } else {
+            console.log(`Chain ${chainId} found but not supported by Relay Protocol`);
+          }
+        }
+      }
+
+      // Try to extract chain ID from URL path
+      const chainPathMatch = url.match(/\/chain\/(\d+)\//);
+      if (chainPathMatch) {
+        const chainId = parseInt(chainPathMatch[1]);
+        const chainExists = chains.find(c => c.id === chainId);
+        if (chainExists) {
+          console.log(`Found supported chain from URL path: ${chainExists.name} (${chainId})`);
+          return chainId;
+        }
+      }
+
+      console.log('No supported chain found for URL:', url);
+      return null;
+    } catch (error) {
+      console.error('Error detecting chain:', error);
+      return null;
+    }
   }
 }
 

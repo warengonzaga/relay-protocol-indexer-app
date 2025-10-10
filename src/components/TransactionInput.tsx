@@ -14,6 +14,23 @@ interface TransactionInputProps {
 export function TransactionInput({ onSubmit, isLoading, error }: TransactionInputProps) {
   const [url, setUrl] = useState('');
   const [detectedChain, setDetectedChain] = useState<{chainId: number, hash: string} | null>(null);
+  const [supportedChains, setSupportedChains] = useState<string[]>([]);
+
+  useEffect(() => {
+    // Load supported chains on component mount
+    const loadSupportedChains = async () => {
+      try {
+        const chains = await relayApi.getSupportedChainNames();
+        setSupportedChains(chains);
+      } catch (error) {
+        console.error('Failed to load supported chains:', error);
+        // Fallback to static list
+        setSupportedChains(['Ethereum', 'Polygon', 'Arbitrum', 'Base', 'BSC', 'Optimism']);
+      }
+    };
+    
+    loadSupportedChains();
+  }, []);
 
   useEffect(() => {
     const detectChainAndHash = async () => {
@@ -59,7 +76,7 @@ export function TransactionInput({ onSubmit, isLoading, error }: TransactionInpu
           Transaction Re-indexer
         </CardTitle>
         <CardDescription>
-          Monitor your Relay Protocol bridge transactions by entering the original transaction hash from your bridge operation
+          Force re-index your Relay Protocol bridge transactions to refresh their status and resolve indexing issues
         </CardDescription>
         <div className="text-xs text-muted-foreground space-y-2">
           <div className="bg-gray-900/50 border border-gray-700 p-3 rounded-lg">
@@ -74,9 +91,9 @@ export function TransactionInput({ onSubmit, isLoading, error }: TransactionInpu
           <div className="text-accent font-medium">📋 How to use:</div>
           <div>Step 1: Copy the transaction hash from your Relay Protocol bridge transaction</div>
           <div>Step 2: Enter the blockchain explorer URL containing that transaction hash</div>
-          <div>Step 3: Click "Index Transaction" to start monitoring the relay status</div>
-          <div>Step 4: View real-time updates as your transaction is processed through the bridge</div>
-          <div className="text-purple-400 text-xs">✨ Supports Etherscan, Polygonscan, Arbiscan, Basescan, BSCScan, and more!</div>
+          <div>Step 3: Click "Index Transaction" to force fresh indexing of your transaction</div>
+          <div>Step 4: Monitor real-time status as the transaction gets re-indexed and processed</div>
+          <div className="text-purple-400 text-xs">✨ Supports {supportedChains.length > 0 ? supportedChains.slice(0, 4).join(', ') + (supportedChains.length > 4 ? ', and more!' : '!') : 'multiple blockchains!'}</div>
         </div>
       </CardHeader>
       <CardContent>
@@ -95,7 +112,7 @@ export function TransactionInput({ onSubmit, isLoading, error }: TransactionInpu
               className="font-mono text-sm"
             />
             <p className="text-xs text-muted-foreground">
-              Supported: Etherscan, Polygonscan, Arbiscan, Basescan, BSCScan, and more
+              Supported: {supportedChains.length > 0 ? supportedChains.slice(0, 6).join(', ') + (supportedChains.length > 6 ? ', and more' : '') : 'Loading supported chains...'}
             </p>
             {detectedChain && (
               <div className="flex items-center gap-2 p-2 bg-accent/10 border border-accent/20 rounded-md">

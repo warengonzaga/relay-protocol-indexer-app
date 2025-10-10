@@ -1,9 +1,21 @@
 export interface Chain {
-  id: string;
+  id: number;
   name: string;
   displayName: string;
-  icon?: string;
+  httpRpcUrl: string;
+  wsRpcUrl: string;
+  explorerUrl: string;
+  explorerName: string;
+  explorerPaths: {
+    transaction: string;
+  };
+  depositEnabled: boolean;
+  tokenSupport: string;
+  disabled: boolean;
   vmType?: string;
+  iconUrl?: string;
+  logoUrl?: string;
+  brandColor?: string;
 }
 
 export interface IndexTransactionRequest {

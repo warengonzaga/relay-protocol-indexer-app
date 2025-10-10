@@ -15,16 +15,15 @@ export function useTransactionMonitoring() {
 
   const checkTransactionStatus = useCallback(async (txHash: string): Promise<RequestStatusResponse | null> => {
     try {
-      console.log('🔍 Checking transaction status for hash:', txHash);
+      console.log('🔍 Polling for transaction status, hash:', txHash);
       
-      // Step 1: Use /requests endpoint to get request ID
-      // This endpoint should be fast and immediately return data if transaction exists
-      console.log('📡 Calling requests endpoint:', `https://api.relay.link/requests?hash=${txHash}`);
+      // Step 1: Check /requests endpoint for request ID
+      console.log('📡 Calling requests endpoint...');
       const requests = await relayApi.getRequestsByTxHash(txHash);
-      console.log('📋 Received requests from /requests endpoint:', requests);
+      console.log('📋 Received requests:', requests);
       
       if (!requests || requests.length === 0) {
-        console.log('❌ No requests found for transaction hash - transaction may not be indexed yet');
+        console.log('⏳ No requests found yet - transaction still being processed');
         return null;
       }
 
@@ -32,7 +31,6 @@ export function useTransactionMonitoring() {
       const latestRequest = requests[0];
       console.log('📄 Latest request found:', latestRequest);
       
-      // Ensure the latest request has an id
       if (!latestRequest?.id) {
         console.warn('⚠️ Latest request missing id:', latestRequest);
         return null;
@@ -40,10 +38,10 @@ export function useTransactionMonitoring() {
       
       console.log('✅ Found request ID:', latestRequest.id);
       
-      // Step 2: Use request ID to get detailed status using v3 endpoint
-      console.log('📡 Calling status endpoint:', `https://api.relay.link/intents/status/v3?requestId=${latestRequest.id}`);
+      // Step 2: Get detailed status using request ID
+      console.log('📡 Calling status endpoint for request ID:', latestRequest.id);
       const statusDetails = await relayApi.getRequestStatus(latestRequest.id);
-      console.log('📊 Received status details from /intents/status/v3 endpoint:', statusDetails);
+      console.log('📊 Received status details:', statusDetails);
       
       return statusDetails;
     } catch (err) {
@@ -61,7 +59,7 @@ export function useTransactionMonitoring() {
       // Step 1: Get chain ID and transaction hash from URL
       const txHash = relayApi.extractTxHashFromUrl(transactionUrl);
       if (!txHash) {
-        throw new Error('Invalid transaction URL. Please provide a valid blockchain explorer URL (e.g., Etherscan, Polygonscan, Arbiscan, etc.)');
+        throw new Error('Invalid transaction URL. Please provide a valid blockchain explorer URL (e.g., Etherscan, Polygonscan, Arbiscan, HyperEVM, etc.)');
       }
 
       const chainId = await relayApi.getChainIdFromUrl(transactionUrl);
@@ -69,7 +67,7 @@ export function useTransactionMonitoring() {
         throw new Error('Could not determine chain ID from URL. Please use a supported blockchain explorer (Etherscan, Arbiscan, Polygonscan, etc.) or check that the URL is correct.');
       }
 
-      console.log(`🚀 OPTIMIZED FLOW: Processing transaction ${txHash} on chain ${chainId}`);
+      console.log(`� RE-INDEXER FLOW: Processing transaction ${txHash} on chain ${chainId}`);
 
       // Set initial monitoring state
       setMonitoringState({
@@ -78,30 +76,13 @@ export function useTransactionMonitoring() {
         lastChecked: new Date(),
       });
 
-      // Step 2: IMMEDIATE CHECK - Use requests endpoint to check for existing request ID
-      console.log('⚡ Step 1: Checking requests endpoint for existing data (should be instant)...');
-      const existingDetails = await checkTransactionStatus(txHash);
-      
-      if (existingDetails) {
-        console.log('✅ SUCCESS! Found existing transaction data immediately:', existingDetails);
-        setMonitoringState(prev => prev ? {
-          ...prev,
-          requestId: existingDetails.requestId,
-          transactionDetails: existingDetails,
-          isMonitoring: false,
-        } : null);
-        return; // Exit early - no indexing or polling needed!
-      }
-
-      console.log('❌ No existing data found, proceeding to indexing...');
-      
-      // Step 3: Index transaction only if no existing data
-      console.log('📦 Step 2: Indexing transaction...');
+      // Step 2: ALWAYS INDEX FIRST (This is a re-indexer tool!)
+      console.log('📦 Step 1: Force indexing transaction (ensuring fresh data)...');
       const indexResult = await relayApi.indexTransaction({ hash: txHash, chainId });
-      console.log('Index result:', indexResult);
+      console.log('✅ Index result:', indexResult);
 
-      // Step 4: Start polling to check if transaction gets request ID
-      console.log('🔄 Step 3: Starting polling for request ID...');
+      // Step 3: Start polling for request ID after indexing
+      console.log('🔄 Step 2: Starting polling for request ID after indexing...');
       
       // Check once immediately after indexing
       const freshDetails = await checkTransactionStatus(txHash);
@@ -114,7 +95,7 @@ export function useTransactionMonitoring() {
           isMonitoring: false,
         } : null);
       } else {
-        console.log('⏳ No immediate results, starting fast polling (every 2s for first minute)...');
+        console.log('⏳ No immediate results, starting polling (every 2s for first minute)...');
       }
     } catch (err) {
       console.error('Error starting monitoring:', err);
