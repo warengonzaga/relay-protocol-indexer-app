@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-appearance="dark">
 
 <head>
     <meta charset="UTF-8" />
@@ -11,8 +11,17 @@
     <link href="/src/main.css" rel="stylesheet" />
 </head>
 
-<body>
+<body class="dark bg-black">
     <div id="root"></div>
+    <script>
+        // Set dark theme for Spark app if it exists
+        document.addEventListener('DOMContentLoaded', function() {
+            const sparkApp = document.getElementById('spark-app');
+            if (sparkApp) {
+                sparkApp.classList.add('dark-theme');
+            }
+        });
+    </script>
     <script type="module" src="/src/main.tsx"></script>
 </body>
 

@@ -3,30 +3,31 @@
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: var(--border);
   }
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.2 0.02 240);
-  --card: oklch(0.98 0.01 240);
-  --card-foreground: oklch(0.2 0.02 240);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.2 0.02 240);
-  --primary: oklch(0.3 0.15 240);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.95 0.02 240);
-  --secondary-foreground: oklch(0.2 0.02 240);
-  --muted: oklch(0.97 0.01 240);
-  --muted-foreground: oklch(0.5 0.02 240);
-  --accent: oklch(0.6 0.2 140);
-  --accent-foreground: oklch(1 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.9 0.01 240);
-  --input: oklch(0.9 0.01 240);
-  --ring: oklch(0.3 0.15 240);
+  /* Dark theme colors matching Relay Protocol */
+  --background: oklch(0.08 0 0); /* Very dark background like Relay */
+  --foreground: oklch(0.95 0 0); /* White text */
+  --card: oklch(0.12 0 0); /* Dark gray cards */
+  --card-foreground: oklch(0.95 0 0); /* White text on cards */
+  --popover: oklch(0.12 0 0); /* Dark popover */
+  --popover-foreground: oklch(0.95 0 0); /* White text */
+  --primary: oklch(0.6 0.25 270); /* Purple primary like Relay */
+  --primary-foreground: oklch(1 0 0); /* White text on primary */
+  --secondary: oklch(0.15 0 0); /* Dark secondary */
+  --secondary-foreground: oklch(0.8 0 0); /* Light text */
+  --muted: oklch(0.15 0 0); /* Muted dark background */
+  --muted-foreground: oklch(0.6 0 0); /* Muted text */
+  --accent: oklch(0.6 0.25 270); /* Purple accent */
+  --accent-foreground: oklch(1 0 0); /* White text on accent */
+  --destructive: oklch(0.577 0.245 27.325); /* Red for errors */
+  --destructive-foreground: oklch(1 0 0); /* White text */
+  --border: oklch(0.25 0 0); /* Dark borders */
+  --input: oklch(0.15 0 0); /* Dark input backgrounds */
+  --ring: oklch(0.6 0.25 270); /* Purple focus ring */
   --radius: 0.5rem;
 }
 
@@ -61,7 +62,20 @@
 
 body {
   font-family: 'Inter', system-ui, sans-serif;
-  @apply bg-background text-foreground;
+  background-color: var(--background);
+  color: var(--foreground);
+  margin: 0;
+  padding: 0;
+}
+
+/* Force dark theme styling */
+* {
+  border-color: var(--border);
+}
+
+/* Ensure all components use dark theme */
+.dark * {
+  color-scheme: dark;
 }
 
 .font-mono {

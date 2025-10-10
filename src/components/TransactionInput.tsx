@@ -59,15 +59,24 @@ export function TransactionInput({ onSubmit, isLoading, error }: TransactionInpu
           Transaction Re-indexer
         </CardTitle>
         <CardDescription>
-          Submit a blockchain transaction URL to re-index it with Relay Protocol and monitor its status
+          Monitor your Relay Protocol bridge transactions by entering the original transaction hash from your bridge operation
         </CardDescription>
-        <div className="text-xs text-muted-foreground space-y-1">
-          <div className="text-accent font-medium">⚡ Optimized Flow:</div>
-          <div>Step 1: <span className="text-accent">Fast check</span> via <code className="bg-muted px-1 rounded">api.relay.link/requests?hash=0x...</code> (instant if exists)</div>
-          <div>Step 2: Index via <code className="bg-muted px-1 rounded">api.relay.link/transactions/index</code> (only if needed)</div>
-          <div>Step 3: Poll via <code className="bg-muted px-1 rounded">api.relay.link/requests?hash=0x...</code> (until request ID appears)</div>
-          <div>Step 4: Get status via <code className="bg-muted px-1 rounded">api.relay.link/intents/status/v3?requestId=...</code> (final details)</div>
-          <div className="text-green-600 text-xs">✨ Most transactions return instantly without polling!</div>
+        <div className="text-xs text-muted-foreground space-y-2">
+          <div className="bg-gray-900/50 border border-gray-700 p-3 rounded-lg">
+            <div className="text-purple-400 font-medium mb-1">🔧 When to use this app:</div>
+            <div className="text-gray-300 space-y-1">
+              <div>• Your transaction doesn't appear on <code className="bg-gray-800 text-purple-300 px-1 rounded">relay.link/transactions</code></div>
+              <div>• The relay transaction URL shows only loading/spinner indefinitely</div>
+              <div>• Your deposit transaction seems "stuck" or not indexed by Relay Protocol</div>
+              <div>• You need to manually re-index a transaction to see its bridge status</div>
+            </div>
+          </div>
+          <div className="text-accent font-medium">📋 How to use:</div>
+          <div>Step 1: Copy the transaction hash from your Relay Protocol bridge transaction</div>
+          <div>Step 2: Enter the blockchain explorer URL containing that transaction hash</div>
+          <div>Step 3: Click "Index Transaction" to start monitoring the relay status</div>
+          <div>Step 4: View real-time updates as your transaction is processed through the bridge</div>
+          <div className="text-purple-400 text-xs">✨ Supports Etherscan, Polygonscan, Arbiscan, Basescan, BSCScan, and more!</div>
         </div>
       </CardHeader>
       <CardContent>
@@ -105,15 +114,16 @@ export function TransactionInput({ onSubmit, isLoading, error }: TransactionInpu
               <div>{error}</div>
               <details className="text-xs">
                 <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
-                  Show technical details
+                  Show troubleshooting help
                 </summary>
-                <div className="mt-2 p-2 bg-muted/50 rounded font-mono text-xs space-y-1">
-                  <div className="text-accent font-medium">Optimized Flow:</div>
-                  <div>Step 1 - Fast Check: GET api.relay.link/requests?hash=0x... (instant)</div>
-                  <div>Step 2 - Index: POST api.relay.link/transactions/index (if needed)</div>
-                  <div>Step 3 - Poll: GET api.relay.link/requests?hash=0x... (until requestId)</div>
-                  <div>Step 4 - Status: GET api.relay.link/intents/status?id=... (final details)</div>
-                  <div>Expected format: {`{ txHash: "0x...", chainId: number }`}</div>
+                <div className="mt-2 p-2 bg-muted/50 rounded text-xs space-y-1">
+                  <div className="text-accent font-medium">Common Issues:</div>
+                  <div>• Wrong transaction - make sure you're using the original bridge transaction hash</div>
+                  <div>• Invalid URL format - ensure you're using a blockchain explorer URL</div>
+                  <div>• Unsupported network - check if your blockchain is supported by Relay Protocol</div>
+                  <div>• Transaction not found - verify the bridge transaction exists and is confirmed</div>
+                  <div>• Network timeout - try again in a few seconds</div>
+                  <div className="text-purple-400">💡 Tip: Use the transaction hash from when you initiated the bridge</div>
                 </div>
               </details>
             </div>
